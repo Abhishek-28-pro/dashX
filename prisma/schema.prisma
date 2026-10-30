@@ -1,0 +1,101 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Report {
+  id                String         @id @default(uuid())
+  trackingId        String         @unique // Unguessable alphanumeric code e.g. "REP-7K9X2M4B"
+  title             String
+  description       String
+  rawDescription    String         // Original untrusted text
+  category          String         // POTHOLE, GARBAGE, STREETLIGHT, WATER_LEAKAGE, TRAFFIC_HAZARD, DRAINAGE, OTHER
+  subCategory       String?
+  status            String         @default("SUBMITTED") // SUBMITTED, TRIAGED, ASSIGNED, IN_PROGRESS, RESOLVED, CLOSED, REJECTED
+  priorityScore     Float          @default(0.0) // [0 - 100]
+  urgencyLevel      String         @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  priorityRationale String?        // Plain-english explanation
+  
+  // Geolocation
+  latitude          Float
+  longitude         Float
+  address           String?
+  ward              String?
+  
+  // Media
+  imageUrl          String?
+  imageAltText      String?        // Accessible alt text
+  
+  // Reporter (Privacy preserved)
+  reporterName      String?
+  reporterPhone     String?
+  
+  // Duplication tracking
+  isDuplicate       Boolean        @default(false)
+  duplicateGroupId  String?
+  parentReportId    String?
+  parentReport      Report?        @relation("ReportDuplicates", fields: [parentReportId], references: [id])
+  childReports      Report[]       @relation("ReportDuplicates")
+  similarityScore   Float?
+  
+  // Cluster / Hotspot tracking
+  clusterId         String?
+  
+  // AI Enrichment & Caching
+  aiCategorized     Boolean        @default(false)
+  embedding         String?        // Serialized vector JSON for cached similarity
+  aiSummary         String?
+  assignedDept      String?        // ROADS_AND_BRIDGES, SOLID_WASTE_MANAGEMENT, ELECTRICAL_AND_LIGHTING, WATER_SUPPLY_AND_SEWERAGE, TRAFFIC_POLICE, GENERAL_MAINTENANCE
+  assignedTeam      String?
+  
+  // Timestamps & Audit
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  resolvedAt        DateTime?
+  
+  // Relations
+  statusHistory     StatusHistory[]
+
+  @@index([status])
+  @@index([category])
+  @@index([createdAt])
+  @@index([duplicateGroupId])
+  @@index([clusterId])
+  @@index([latitude, longitude])
+  @@index([trackingId])
+}
+
+model StatusHistory {
+  id          String   @id @default(uuid())
+  reportId    String
+  report      Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  fromStatus  String
+  toStatus    String
+  changedBy   String   // "SYSTEM_AI" or admin role name e.g. "OFFICER_PATEL"
+  note        String?  // Mandatory for jumps to Resolved or Closed
+  createdAt   DateTime @default(now())
+
+  @@index([reportId])
+  @@index([createdAt])
+}
+
+model HotspotCache {
+  id             String     @id @default(uuid())
+  ward           String
+  category       String
+  centerLat      Float
+  centerLng      Float
+  radiusMeters   Float
+  reportCount    Int
+  severityScore  Float
+  actionBrief    String     // AI-synthesized action plan for municipal teams
+  generatedAt    DateTime   @default(now())
+  expiresAt      DateTime
+
+  @@index([ward])
+  @@index([expiresAt])
+}
