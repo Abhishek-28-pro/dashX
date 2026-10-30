@@ -6,7 +6,7 @@ import { HomeClientWrapper } from '@/components/home/HomeClientWrapper';
 import { DynamicMap } from '@/components/map/DynamicMap';
 import { LiveFeed } from '@/components/home/LiveFeed';
 
-export const revalidate = 30; // ISR cache revalidation every 30 seconds
+export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
   // Parallel server-side data fetching

@@ -6,7 +6,7 @@ import { DynamicMapsView } from '@/components/map/DynamicMapsView';
 import type { HotspotCluster, IssueCategory } from '@/types';
 import { Flame, MapPin, AlertTriangle, ShieldCheck } from 'lucide-react';
 
-export const revalidate = 30;
+export const dynamic = 'force-dynamic';
 
 export default async function MapsPage() {
   const reports = await prisma.report.findMany({
