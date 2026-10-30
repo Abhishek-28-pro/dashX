@@ -5,7 +5,7 @@
 
 import { PrismaClient } from '@prisma/client';
 import fs from 'fs';
-import path from 'path';
+import { SEED_DB_BASE64 } from './seedBase64';
 
 function resolveDatabaseUrl(): string {
   const envUrl = process.env.DATABASE_URL?.trim();
@@ -19,21 +19,11 @@ function resolveDatabaseUrl(): string {
   // SQLite must operate in /tmp which is the only writable directory.
   if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
     const tmpDbPath = '/tmp/dev.db';
-    if (!fs.existsSync(tmpDbPath)) {
-      const candidates = [
-        path.join(process.cwd(), 'prisma', 'seed.db'),
-        path.join(process.cwd(), 'prisma', 'dev.db'),
-        path.join(process.cwd(), 'dev.db'),
-      ];
-      for (const candidate of candidates) {
-        if (fs.existsSync(candidate)) {
-          try {
-            fs.copyFileSync(candidate, tmpDbPath);
-            break;
-          } catch (e) {
-            console.error('[Prisma] Error copying seed database to /tmp:', e);
-          }
-        }
+    if (!fs.existsSync(tmpDbPath) || fs.statSync(tmpDbPath).size === 0) {
+      try {
+        fs.writeFileSync(tmpDbPath, Buffer.from(SEED_DB_BASE64, 'base64'));
+      } catch (e) {
+        console.error('[Prisma] Error writing embedded seed database to /tmp:', e);
       }
     }
     return `file:${tmpDbPath}`;
