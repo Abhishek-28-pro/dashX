@@ -9,9 +9,14 @@ import { LiveFeed } from '@/components/home/LiveFeed';
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-  // Parallel server-side data fetching
-  const [reports, totalReports, resolvedCount, criticalIssuesCount, hotspotCount] =
-    await Promise.all([
+  let reports: Awaited<ReturnType<typeof prisma.report.findMany>> = [];
+  let totalReports = 0;
+  let resolvedCount = 0;
+  let criticalIssuesCount = 0;
+  let hotspotCount = 0;
+
+  try {
+    [reports, totalReports, resolvedCount, criticalIssuesCount, hotspotCount] = await Promise.all([
       prisma.report.findMany({
         take: 30,
         orderBy: [{ priorityScore: 'desc' }, { createdAt: 'desc' }],
@@ -27,6 +32,9 @@ export default async function HomePage() {
         where: { clusterId: { not: null } },
       }),
     ]);
+  } catch (err) {
+    console.error('[HomePage] Database query exception, rendering graceful state:', err);
+  }
 
   const resolutionRatePercent =
     totalReports > 0 ? Math.round((resolvedCount / totalReports) * 100) : 0;

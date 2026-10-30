@@ -23,6 +23,7 @@
 
 # Prisma / SQLite
 *.db
+!prisma/seed.db
 *.db-journal
 
 # Uploads

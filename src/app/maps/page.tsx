@@ -9,13 +9,18 @@ import { Flame, MapPin, AlertTriangle, ShieldCheck } from 'lucide-react';
 export const dynamic = 'force-dynamic';
 
 export default async function MapsPage() {
-  const reports = await prisma.report.findMany({
-    where: {
-      status: { notIn: ['RESOLVED', 'CLOSED', 'REJECTED'] },
-    },
-    orderBy: [{ priorityScore: 'desc' }],
-    take: 100,
-  });
+  let reports: Awaited<ReturnType<typeof prisma.report.findMany>> = [];
+  try {
+    reports = await prisma.report.findMany({
+      where: {
+        status: { notIn: ['RESOLVED', 'CLOSED', 'REJECTED'] },
+      },
+      orderBy: [{ priorityScore: 'desc' }],
+      take: 100,
+    });
+  } catch (err) {
+    console.error('[MapsPage] Database query exception, rendering graceful state:', err);
+  }
 
   const clusterable: ClusterableReport[] = reports.map((r) => ({
     id: r.id,

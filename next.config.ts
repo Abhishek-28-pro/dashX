@@ -7,6 +7,9 @@ if (!process.env.DATABASE_URL || process.env.DATABASE_URL.trim() === '') {
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  outputFileTracingIncludes: {
+    '/**': ['./prisma/seed.db'],
+  },
   async headers() {
     return [
       {

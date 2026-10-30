@@ -5,23 +5,46 @@ import { ThreePaneAdmin } from '@/components/admin/ThreePaneAdmin';
 export const dynamic = 'force-dynamic';
 
 export default async function AdminPage() {
-  const reports = await prisma.report.findMany({
-    orderBy: [{ priorityScore: 'desc' }, { createdAt: 'desc' }],
-    include: {
-      statusHistory: {
-        orderBy: { createdAt: 'desc' },
-      },
-      childReports: {
-        select: {
-          id: true,
-          trackingId: true,
-          title: true,
-          createdAt: true,
-          similarityScore: true,
+  let reports: Awaited<
+    ReturnType<
+      typeof prisma.report.findMany<{
+        include: {
+          statusHistory: { orderBy: { createdAt: 'desc' } };
+          childReports: {
+            select: {
+              id: true;
+              trackingId: true;
+              title: true;
+              createdAt: true;
+              similarityScore: true;
+            };
+          };
+        };
+      }>
+    >
+  > = [];
+
+  try {
+    reports = await prisma.report.findMany({
+      orderBy: [{ priorityScore: 'desc' }, { createdAt: 'desc' }],
+      include: {
+        statusHistory: {
+          orderBy: { createdAt: 'desc' },
+        },
+        childReports: {
+          select: {
+            id: true,
+            trackingId: true,
+            title: true,
+            createdAt: true,
+            similarityScore: true,
+          },
         },
       },
-    },
-  });
+    });
+  } catch (err) {
+    console.error('[AdminPage] Database query exception, rendering graceful state:', err);
+  }
 
   return (
     <div>
